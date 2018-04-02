@@ -22,5 +22,8 @@ qdf_print_int(FILE *f, int32_t n);
 void
 qdf_print_real(FILE *f, double n);
 
+void
+qdf_print_string(FILE *f, const char *s);
+
 #endif
 

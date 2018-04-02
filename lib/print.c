@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <float.h>
+#include <ctype.h>
 #include <math.h>
 
 void
@@ -132,5 +133,101 @@ qdf_print_real(FILE *f, double n)
 	}
 
 	fprintf(f, "%.*f", precision, n);
+}
+
+static bool
+balanced(const char *s)
+{
+	const char *p;
+	int depth;
+
+	depth = 0;
+
+	for (p = s; *p != '\0'; p++) {
+		switch (*p) {
+		case '(': depth++; break;
+		case ')': depth--; break;
+
+		default:
+			;
+		}
+
+		if (depth == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void
+qdf_print_string(FILE *f, const char *s)
+{
+	const int limit = 70;
+	const char *p;
+	int depth;
+
+	assert(f != NULL);
+	assert(s != NULL);
+
+	fprintf(f, "(");
+
+	depth = 0;
+
+	for (p = s; *p != '\0'; p++) {
+		/* ISO PDF 2.0 "A PDF writer may split a literal string
+		 * across multiple lines." */
+		if ((p - s + 1) % limit == 0) {
+			fprintf(f, "\\\n");
+		}
+
+		/* ISO PDF 2.0 7.3.4.2 "Three octal digits shall be used,
+		 * with leading zeroes as needed, if the next character of
+		 * the string is also a digit." */
+		if (!isprint((unsigned char) *p)) {
+			fprintf(f, "\\%0*o",
+				isdigit((unsigned char) *(p + 1)) ? 3 : 0,
+				(unsigned char) *p);
+			continue;
+		}
+
+		switch (*p) {
+		case '\\': fprintf(f, "\\\\"); continue;
+		case '\n': fprintf(f, "\\n");  continue;
+		case '\r': fprintf(f, "\\r");  continue;
+		case '\t': fprintf(f, "\\t");  continue;
+		case '\b': fprintf(f, "\\b");  continue;
+		case '\f': fprintf(f, "\\f");  continue;
+
+		/* ISO PDF 2.0 7.3.4.2 "Balanced pairs of patentheses ... require
+		 * no special treatment." */
+
+		case '(':
+			if (depth >= 0 && balanced(p)) {
+				depth++;
+				fprintf(f, "(");
+				continue;
+			}
+
+			fprintf(f, "\\(");
+			continue;
+
+		case ')':
+			if (depth > 0) {
+				depth--;
+				fprintf(f, ")");
+				continue;
+			}
+
+			fprintf(f, "\\)");
+			continue;
+
+		default:
+			fprintf(f, "%c", *p);
+			continue;
+		}
+	}
+
+	fprintf(f, ")");
 }
 
