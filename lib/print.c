@@ -248,3 +248,38 @@ qdf_print_bin(FILE *f, const void *p, size_t n)
 	fprintf(f, ">");
 }
 
+void
+qdf_print_name(FILE *f, const char *name)
+{
+	const char *p;
+
+	assert(f != NULL);
+	assert(name != NULL);
+
+	fprintf(f, "/");
+
+	for (p = name; *p != '\0'; p++) {
+		if (*p == '#') {
+			fprintf(f, "#%02x", (unsigned char) *p);
+			continue;
+		}
+
+		if (!isprint((unsigned char) *p)) {
+			fprintf(f, "#%02x", (unsigned char) *p);
+			continue;
+		}
+
+		if (isspace((unsigned char) *p)) {
+			fprintf(f, "#%02x", (unsigned char) *p);
+			continue;
+		}
+
+		if (((unsigned char) *p) < 0x21 || ((unsigned char) *p) > 0x7e) {
+			fprintf(f, "#%02x", (unsigned char) *p);
+			continue;
+		}
+
+		fprintf(f, "%c", *p);
+	}
+}
+

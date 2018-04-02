@@ -28,5 +28,8 @@ qdf_print_string(FILE *f, const char *s);
 void
 qdf_print_bin(FILE *f, const void *p, size_t n);
 
+void
+qdf_print_name(FILE *f, const char *name);
+
 #endif
 
