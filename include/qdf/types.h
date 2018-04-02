@@ -31,6 +31,11 @@ struct qdf_data {
 	size_t n;
 };
 
+struct qdf_dict {
+	size_t n;
+	struct qdf_entry *e;
+};
+
 struct qdf_array {
 	size_t n;
 	struct qdf_object *o;
@@ -46,8 +51,14 @@ struct qdf_object {
 		struct qdf_data data;
 		const char *name;
 		struct qdf_array a;
-		/* TODO: dict, stream */
+		struct qdf_dict d;
+		/* TODO: stream */
 	} u;
+};
+
+struct qdf_entry {
+	const char *name;
+	struct qdf_object o;
 };
 
 #endif

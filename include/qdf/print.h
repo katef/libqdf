@@ -38,6 +38,9 @@ void
 qdf_print_array(FILE *f, const struct qdf_array *a);
 
 void
+qdf_print_dict(FILE *f, const struct qdf_dict *d);
+
+void
 qdf_print_object(FILE *f, const struct qdf_object *o);
 
 #endif

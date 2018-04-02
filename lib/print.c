@@ -314,6 +314,9 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 		return;
 
 	case QDF_TYPE_DICT:
+		qdf_print_dict(f, &o->u.d);
+		return;
+
 	case QDF_TYPE_STREAM:
 		assert(!"unimplemented");
 		return;
@@ -343,5 +346,47 @@ qdf_print_array(FILE *f, const struct qdf_array *a)
 	}
 
 	fprintf(f, "]");
+}
+
+void
+qdf_print_dict(FILE *f, const struct qdf_dict *d)
+{
+	size_t i, j, n;
+
+	assert(f != NULL);
+	assert(d != NULL);
+
+	fprintf(f, "<<");
+
+	/* ISO PDF 2.0 7.3.7 "A dictonary whose value is null ... shall be
+	 * treated the same as if the entry does not exist." */
+
+	n = 0;
+
+	for (i = 0; i < d->n; i++) {
+		if (d->e[i].o.type == QDF_TYPE_NULL) {
+			continue;
+		}
+
+		n++;
+	}
+
+	for (i = 0, j = 0; i < d->n; i++) {
+		if (d->e[i].o.type == QDF_TYPE_NULL) {
+			continue;
+		}
+
+		qdf_print_name(f, d->e[i].name);
+		fprintf(f, " ");
+		qdf_print_object(f, &d->e[i].o);
+
+		if (j + 1 < n) {
+			fprintf(f, " ");
+		}
+
+		j++;
+	}
+
+	fprintf(f, ">>");
 }
 
