@@ -7,8 +7,10 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 void
 qdf_vprint_comment(FILE *f, const char *fmt, va_list ap)
@@ -57,5 +59,16 @@ qdf_print_bool(FILE *f, bool v)
 	assert(f != NULL);
 
 	fprintf(f, "%s", v ? "true" : "false");
+}
+
+void
+qdf_print_int(FILE *f, int32_t n)
+{
+	assert(f != NULL);
+
+	/* ISO PDF 2.0 Annex C.1 "Integer values ... can often be expressed
+	 * within 32 bits." */
+
+	fprintf(f, "%" PRId32, n);
 }
 

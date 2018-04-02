@@ -16,5 +16,8 @@ qdf_print_comment(FILE *f, const char *fmt, ...);
 void
 qdf_print_bool(FILE *f, bool v);
 
+void
+qdf_print_int(FILE *f, int32_t n);
+
 #endif
 
