@@ -231,3 +231,20 @@ qdf_print_string(FILE *f, const char *s)
 	fprintf(f, ")");
 }
 
+void
+qdf_print_bin(FILE *f, const void *p, size_t n)
+{
+	size_t i;
+
+	assert(f != NULL);
+	assert(p != NULL);
+
+	fprintf(f, "<");
+
+	for (i = 0; i < n; i++) {
+		fprintf(f, "%02x", ((unsigned char *) p)[i]);
+	}
+
+	fprintf(f, ">");
+}
+

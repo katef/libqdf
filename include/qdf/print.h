@@ -25,5 +25,8 @@ qdf_print_real(FILE *f, double n);
 void
 qdf_print_string(FILE *f, const char *s);
 
+void
+qdf_print_bin(FILE *f, const void *p, size_t n);
+
 #endif
 
