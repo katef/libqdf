@@ -31,6 +31,11 @@ struct qdf_data {
 	size_t n;
 };
 
+struct qdf_array {
+	size_t n;
+	struct qdf_object *o;
+};
+
 struct qdf_object {
 	enum qdf_type type;
 	union {
@@ -40,7 +45,8 @@ struct qdf_object {
 		const char *s;
 		struct qdf_data data;
 		const char *name;
-		/* TODO: array, dict, stream */
+		struct qdf_array a;
+		/* TODO: dict, stream */
 	} u;
 };
 

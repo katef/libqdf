@@ -35,6 +35,9 @@ void
 qdf_print_name(FILE *f, const char *name);
 
 void
+qdf_print_array(FILE *f, const struct qdf_array *a);
+
+void
 qdf_print_object(FILE *f, const struct qdf_object *o);
 
 #endif

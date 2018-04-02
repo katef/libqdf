@@ -307,12 +307,12 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 	case QDF_TYPE_REAL:   qdf_print_real  (f, o->u.n);    return;
 	case QDF_TYPE_STRING: qdf_print_string(f, o->u.s);    return;
 	case QDF_TYPE_NAME:   qdf_print_name  (f, o->u.name); return;
+	case QDF_TYPE_ARRAY:  qdf_print_array (f, &o->u.a);   return;
 
 	case QDF_TYPE_BIN:
 		qdf_print_bin(f, o->u.data.p, o->u.data.n);
 		return;
 
-	case QDF_TYPE_ARRAY:
 	case QDF_TYPE_DICT:
 	case QDF_TYPE_STREAM:
 		assert(!"unimplemented");
@@ -322,5 +322,26 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 		assert(!"unreached");
 		return;
 	}
+}
+
+void
+qdf_print_array(FILE *f, const struct qdf_array *a)
+{
+	size_t i;
+
+	assert(f != NULL);
+	assert(a != NULL);
+
+	fprintf(f, "[");
+
+	for (i = 0; i < a->n; i++) {
+		qdf_print_object(f, &a->o[i]);
+
+		if (i + 1 < a->n) {
+			fprintf(f, " ");
+		}
+	}
+
+	fprintf(f, "]");
 }
 
