@@ -19,5 +19,8 @@ qdf_print_bool(FILE *f, bool v);
 void
 qdf_print_int(FILE *f, int32_t n);
 
+void
+qdf_print_real(FILE *f, double n);
+
 #endif
 
