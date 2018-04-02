@@ -51,3 +51,11 @@ qdf_print_comment(FILE *f, const char *fmt, ...)
 	va_end(ap);
 }
 
+void
+qdf_print_bool(FILE *f, bool v)
+{
+	assert(f != NULL);
+
+	fprintf(f, "%s", v ? "true" : "false");
+}
+

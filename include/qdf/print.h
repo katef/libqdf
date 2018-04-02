@@ -13,5 +13,8 @@ qdf_vprint_comment(FILE *f, const char *fmt, va_list ap);
 void
 qdf_print_comment(FILE *f, const char *fmt, ...);
 
+void
+qdf_print_bool(FILE *f, bool v);
+
 #endif
 
