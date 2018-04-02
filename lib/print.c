@@ -16,6 +16,9 @@
 #include <ctype.h>
 #include <math.h>
 
+#include <qdf/types.h>
+#include <qdf/print.h>
+
 void
 qdf_vprint_comment(FILE *f, const char *fmt, va_list ap)
 {
@@ -288,6 +291,36 @@ qdf_print_name(FILE *f, const char *name)
 		}
 
 		fprintf(f, "%c", *p);
+	}
+}
+
+void
+qdf_print_object(FILE *f, const struct qdf_object *o)
+{
+	assert(f != NULL);
+	assert(o != NULL);
+
+	switch (o->type) {
+	case QDF_TYPE_NULL:   qdf_print_null  (f);            return;
+	case QDF_TYPE_BOOL:   qdf_print_bool  (f, o->u.v);    return;
+	case QDF_TYPE_INT:    qdf_print_int   (f, o->u.i);    return;
+	case QDF_TYPE_REAL:   qdf_print_real  (f, o->u.n);    return;
+	case QDF_TYPE_STRING: qdf_print_string(f, o->u.s);    return;
+	case QDF_TYPE_NAME:   qdf_print_name  (f, o->u.name); return;
+
+	case QDF_TYPE_BIN:
+		qdf_print_bin(f, o->u.data.p, o->u.data.n);
+		return;
+
+	case QDF_TYPE_ARRAY:
+	case QDF_TYPE_DICT:
+	case QDF_TYPE_STREAM:
+		assert(!"unimplemented");
+		return;
+
+	default:
+		assert(!"unreached");
+		return;
 	}
 }
 

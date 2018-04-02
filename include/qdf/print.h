@@ -34,5 +34,8 @@ qdf_print_bin(FILE *f, const void *p, size_t n);
 void
 qdf_print_name(FILE *f, const char *name);
 
+void
+qdf_print_object(FILE *f, const struct qdf_object *o);
+
 #endif
 
