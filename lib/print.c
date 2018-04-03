@@ -390,3 +390,26 @@ qdf_print_dict(FILE *f, const struct qdf_dict *d)
 	fprintf(f, ">>");
 }
 
+void
+qdf_print_def(FILE *f, unsigned id, const struct qdf_object *o)
+{
+	const unsigned gen = 0;
+
+	assert(f != NULL);
+	assert(o != NULL);
+
+	fprintf(f, "%u %u obj\n", id, gen);
+	qdf_print_object(f, o);
+	fprintf(f, "\nendobj");
+}
+
+void
+qdf_print_ref(FILE *f, unsigned id)
+{
+	const unsigned gen = 0;
+
+	assert(f != NULL);
+
+	fprintf(f, "%u %u R", id, gen);
+}
+

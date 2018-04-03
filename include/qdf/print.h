@@ -43,5 +43,11 @@ qdf_print_dict(FILE *f, const struct qdf_dict *d);
 void
 qdf_print_object(FILE *f, const struct qdf_object *o);
 
+void
+qdf_print_def(FILE *f, unsigned id, const struct qdf_object *o);
+
+void
+qdf_print_ref(FILE *f, unsigned id);
+
 #endif
 
