@@ -88,6 +88,14 @@ qdf_print_int(FILE *f, int32_t n)
 }
 
 void
+qdf_print_size(FILE *f, size_t n)
+{
+	assert(f != NULL);
+
+	fprintf(f, "%zu", n);
+}
+
+void
 qdf_print_real(FILE *f, double n)
 {
 	double i, b;
@@ -304,6 +312,7 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 	case QDF_TYPE_NULL:   qdf_print_null  (f);            return;
 	case QDF_TYPE_BOOL:   qdf_print_bool  (f, o->u.v);    return;
 	case QDF_TYPE_INT:    qdf_print_int   (f, o->u.i);    return;
+	case QDF_TYPE_SIZE:   qdf_print_size  (f, o->u.z);    return;
 	case QDF_TYPE_REAL:   qdf_print_real  (f, o->u.n);    return;
 	case QDF_TYPE_STRING: qdf_print_string(f, o->u.s);    return;
 	case QDF_TYPE_NAME:   qdf_print_name  (f, o->u.name); return;

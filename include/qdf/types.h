@@ -16,6 +16,7 @@
 enum qdf_type {
 	QDF_TYPE_BOOL,
 	QDF_TYPE_INT,
+	QDF_TYPE_SIZE,
 	QDF_TYPE_REAL,
 	QDF_TYPE_STRING,
 	QDF_TYPE_BIN,
@@ -46,6 +47,7 @@ struct qdf_object {
 	union {
 		bool v;
 		int32_t i;
+		size_t z;
 		double n;
 		const char *s;
 		struct qdf_data data;

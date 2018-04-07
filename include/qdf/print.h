@@ -23,6 +23,9 @@ void
 qdf_print_int(FILE *f, int32_t n);
 
 void
+qdf_print_size(FILE *f, size_t n);
+
+void
 qdf_print_real(FILE *f, double n);
 
 void
