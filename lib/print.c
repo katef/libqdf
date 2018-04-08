@@ -275,6 +275,9 @@ qdf_print_name(FILE *f, const char *name)
 	assert(f != NULL);
 	assert(name != NULL);
 
+	/* ISO PDF 2.0 7.3.5 "Begnning with PDF 1.2 a name object is ..."
+	 * and 1.2 is the minimum version libqdf supports for this reason. */
+
 	fprintf(f, "/");
 
 	for (p = name; *p != '\0'; p++) {
