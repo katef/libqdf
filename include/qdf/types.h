@@ -16,7 +16,7 @@
 enum qdf_type {
 	QDF_TYPE_BOOL,
 	QDF_TYPE_INT,
-	QDF_TYPE_SIZE,
+	QDF_TYPE_SIZE, /* size_t */
 	QDF_TYPE_REAL,
 	QDF_TYPE_STRING,
 	QDF_TYPE_BIN,
@@ -26,6 +26,19 @@ enum qdf_type {
 	QDF_TYPE_STREAM,
 	QDF_TYPE_NULL
 };
+
+/* ISO PDF 2.0 7.3.3 "The range and precision of numbers may be limited by the
+ * internal representations used in the computer on which the PDF processor
+ * is running; ..."
+ * ISO PDF 2.0 Annex C.1 "Integer values (such as object numbers) can often be
+ * expressed within 32 bits" */
+typedef int_fast32_t qdf_int;
+#define QDF_PRId     PRIdFAST32
+
+/* ISO PDF 2.0 Annex C.1 "Modern computers often represent ... real numbers
+ * using ... IEEE 754 single or double precision." */
+typedef double       qdf_real;
+#define QDF_PRIr     "f"
 
 struct qdf_data {
 	const void *p;
@@ -46,9 +59,9 @@ struct qdf_object {
 	enum qdf_type type;
 	union {
 		bool v;
-		int32_t i;
+		qdf_int i;
 		size_t z;
-		double n;
+		qdf_real n;
 		const char *s;
 		struct qdf_data data;
 		const char *name;

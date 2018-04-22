@@ -77,14 +77,11 @@ qdf_print_bool(FILE *f, bool v)
 }
 
 void
-qdf_print_int(FILE *f, int32_t n)
+qdf_print_int(FILE *f, qdf_int n)
 {
 	assert(f != NULL);
 
-	/* ISO PDF 2.0 Annex C.1 "Integer values ... can often be expressed
-	 * within 32 bits." */
-
-	fprintf(f, "%" PRId32, n);
+	fprintf(f, "%" QDF_PRId, n);
 }
 
 void
@@ -96,10 +93,10 @@ qdf_print_size(FILE *f, size_t n)
 }
 
 void
-qdf_print_real(FILE *f, double n)
+qdf_print_real(FILE *f, qdf_real n)
 {
-	double i, b;
 	const int precision = 8;
+	double i, b; /* not qdf_real; for modf() and friends */
 
 	assert(f != NULL);
 	assert(!isnan(n));
@@ -109,9 +106,6 @@ qdf_print_real(FILE *f, double n)
 		fprintf(f, "0");
 		return;
 	}
-
-	/* ISO PDF 2.0 Annex C.1 "Modern computers often represent and process
-	 * real numbers using ... IEEE 754 single or double precision." */
 
 	/* ISO PDF 2.0 7.33 "A PDF writer shall not use the PostScript language
 	 * syntax for numbers with non-decimal radicies (such as 16#FFFE) or in
@@ -151,7 +145,7 @@ qdf_print_real(FILE *f, double n)
 		return;
 	}
 
-	fprintf(f, "%.*f", precision, n);
+	fprintf(f, "%.*" QDF_PRIr, precision, n);
 }
 
 static bool

@@ -20,13 +20,13 @@ void
 qdf_print_bool(FILE *f, bool v);
 
 void
-qdf_print_int(FILE *f, int32_t n);
+qdf_print_int(FILE *f, qdf_int n);
 
 void
 qdf_print_size(FILE *f, size_t n);
 
 void
-qdf_print_real(FILE *f, double n);
+qdf_print_real(FILE *f, qdf_real n);
 
 void
 qdf_print_string(FILE *f, const char *s);
