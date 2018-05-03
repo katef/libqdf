@@ -7,6 +7,8 @@
 #ifndef LIBQDF_PARAMS_H
 #define LIBQDF_PARAMS_H
 
+#define QDF_PARAMS_MAX 8
+
 /* ISO PDF 2.0 7.4.4.3 t8 "Optional parameters for LZWDecode
  * and FlateDecode filters" */
 struct qdf_param_lzw_flate {
