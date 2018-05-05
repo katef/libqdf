@@ -7,17 +7,23 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <errno.h>
 #include <float.h>
 #include <ctype.h>
 #include <math.h>
 
 #include <qdf/types.h>
 #include <qdf/print.h>
+#include <qdf/params.h>
+#include <qdf/filter.h>
+
+#include "filter.h"
 
 void
 qdf_vprint_comment(FILE *f, const char *fmt, va_list ap)
@@ -314,17 +320,11 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 	case QDF_TYPE_STRING: qdf_print_string(f, o->u.s);    return;
 	case QDF_TYPE_NAME:   qdf_print_name  (f, o->u.name); return;
 	case QDF_TYPE_ARRAY:  qdf_print_array (f, &o->u.a);   return;
+	case QDF_TYPE_DICT:   qdf_print_dict  (f, &o->u.d);   return;
+	case QDF_TYPE_STREAM: qdf_print_stream(f, &o->u.st);  return;
 
 	case QDF_TYPE_BIN:
 		qdf_print_bin(f, o->u.data.p, o->u.data.n);
-		return;
-
-	case QDF_TYPE_DICT:
-		qdf_print_dict(f, &o->u.d);
-		return;
-
-	case QDF_TYPE_STREAM:
-		assert(!"unimplemented");
 		return;
 
 	default:
@@ -417,5 +417,208 @@ qdf_print_ref(FILE *f, unsigned id)
 	assert(f != NULL);
 
 	fprintf(f, "%u %u R", id, gen);
+}
+
+static struct qdf_object
+devolve(const struct qdf_array *a)
+{
+	assert(a != NULL);
+
+	switch (a->n) {
+	case 0:  return (struct qdf_object) { .type = QDF_TYPE_NULL };
+	case 1:  return a->o[0];
+	default: return (struct qdf_object) { .type = QDF_TYPE_ARRAY, .u.a = *a };
+	}
+}
+
+static bool
+at_least_one_is_non_null(const struct qdf_object *a, size_t n)
+{
+	size_t i;
+
+	assert(a != NULL);
+
+	for (i = 0; i < n; i++) {
+		if (a[i].type != QDF_TYPE_NULL) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void
+qdf_print_stream_filters(FILE *f,
+	size_t length, const struct qdf_filter_array *a,
+	const char *filter_name, const char *decodeparams_name)
+{
+	struct qdf_entry e[3];
+	size_t i;
+	size_t k;
+
+	assert(f != NULL);
+	assert(a != NULL);
+	assert(filter_name != NULL);
+	assert(decodeparams_name != NULL);
+
+	k = 0;
+
+	e[k].name   = "Length";
+	e[k].o.type = QDF_TYPE_SIZE;
+	e[k].o.u.z  = length;
+
+	k++;
+
+	/*
+	 * Single-item arrays are handled by devolve().
+	 * These elements are optional, so we take advantage of an element
+	 * being null to omit an empty array when printing the dict.
+	 */
+
+	/*
+	 * ISO PDF 2.0 7.3.8.2 t5 /Filters "The name, or an array of zero,
+	 * one or several names, of filter(s) ... Multiple filters shall
+	 * be specified in the order in which they are to be applied.
+	 */
+
+	struct qdf_object filters[a->n];
+
+	for (i = 0; i < a->n; i++) {
+		filters[i].type   = QDF_TYPE_NAME;
+		filters[i].u.name = qdf_filter_name(a->a[i].type);
+	}
+
+	e[k].name = filter_name;
+	e[k].o    = devolve(& (struct qdf_array) { a->n, filters });
+
+	k++;
+
+	struct qdf_object decodeparams[a->n];
+
+	/*
+	 * Storage for the elements within the /DecodeParms dict.
+	 * XXX: This is worst case; could count exactly
+	 */
+	struct qdf_entry l[a->n * QDF_PARAMS_MAX];
+	struct qdf_entry *p;
+
+	p = l;
+
+	/*
+	 * ISO PDF 2.0 7.3.8.2 t5 /DecodeParms "If ... any of the filters
+	 * has parameters set to nondefault values, DecodeParms shall be
+	 * an array ... in the same order as the Filter array:
+	 * either the parameter dictionary for that filter, or the null
+	 * object if that filter has no parameters
+	 * (or if all of its parameters have their default values)."
+	 */
+
+	for (i = 0; i < a->n; i++) {
+		decodeparams[i] = qdf_filter_to_object(&a->a[i], p);
+		if (decodeparams[i].type == QDF_TYPE_DICT) {
+			p += decodeparams[i].u.d.n;
+		}
+	}
+
+	/*
+	 * ISO PDF 2.0 7.3.8.2 t5 /DecodeParms "If there is only
+	 * one filter and that filter has parameters, DecodeParms
+	 * shall be set to the filter's parameter dictionary ..."
+	 *
+	 * ISO PDF 2.0 7.3.8.2 t5 /DecodeParms "If none of the filters
+	 * have parameters, or if all their parameters have default values,
+	 * the DecodeParms entry may be omitted."
+	 *
+	 * Default values are handled by qdf_filter_to_object().
+	 */
+
+	if (at_least_one_is_non_null(decodeparams, a->n)) {
+		e[k].name = decodeparams_name;
+		e[k].o    = devolve(& (struct qdf_array) { a->n, decodeparams });
+
+		k++;
+	}
+
+	/*
+	 * TODO: (optional)
+	 * ISO PDF 2.0 7.3.8.2 t5 /DL "A non-negative integer representing
+	 * the number of bytes in the decoded (defiltered) stream.
+	 * This value is only a hint; ..."
+	 */
+
+	/*
+	 * TODO: merge in a stream's own extra dict entries - I think each
+	 * stream can provide its own. Then check e[] for unique names
+	 */
+
+	qdf_print_dict(f, & (struct qdf_dict) { k, e });
+}
+
+static bool
+qdf_print_filter_encoded(FILE *f,
+	const void *p, size_t n,
+	const struct qdf_filter_array *a)
+{
+	size_t i;
+
+	assert(f != NULL);
+	assert(p != NULL);
+	assert(a != NULL);
+
+	for (i = 0; i < a->n; i++) {
+		const void *out;
+		size_t outsz;
+		bool r;
+
+		r = qdf_filter_encode(&a->a[i], p, n, &out, &outsz);
+
+		if (i > 0) {
+			free((void *) p);
+		}
+
+		if (!r) {
+			return false;
+		}
+
+		p = out;
+		n = outsz;
+	}
+
+	fwrite(p, n, 1, f);
+
+	if (i > 0) {
+		free((void *) p);
+	}
+
+	return true;
+}
+
+bool
+qdf_print_stream(FILE *f, const struct qdf_stream *st)
+{
+	assert(f != NULL);
+	assert(st != NULL);
+
+	/* XXX: /Length is incorrect here; it should be the *encoded* length */
+	qdf_print_stream_filters(f,
+		st->data.n, &st->filters,
+		"Filter", "DecodeParams");
+
+	fprintf(f, "stream\n");
+
+	if (!qdf_print_filter_encoded(f, st->data.p, st->data.n, &st->filters)) {
+		return false;
+	}
+
+	/*
+	 * PDF 2.0 7.3.8.2 "Streams shall also not contain too much data,
+	 * with the exception that there may be an extra end-of-line marker
+	 * ... before the keyword endstream."
+	 */
+
+	fprintf(f, "\n");
+	fprintf(f, "endstream");
+
+	return true;
 }
 

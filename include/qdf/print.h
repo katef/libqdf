@@ -52,5 +52,8 @@ qdf_print_def(FILE *f, unsigned id, const struct qdf_object *o);
 void
 qdf_print_ref(FILE *f, unsigned id);
 
+bool
+qdf_print_stream(FILE *f, const struct qdf_stream *st);
+
 #endif
 

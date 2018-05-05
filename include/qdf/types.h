@@ -7,6 +7,8 @@
 #ifndef LIBQDF_TYPES_H
 #define LIBQDF_TYPES_H
 
+struct qdf_filter;
+
 /*
  * ISO PDF 2.0 7.3.1 "PDF includes eight basic types of objects:
  * Boolean values, Integer and Real numbers, Strings, Names,
@@ -55,6 +57,16 @@ struct qdf_array {
 	struct qdf_object *o;
 };
 
+struct qdf_filter_array {
+	size_t n;
+	struct qdf_filter *a;
+};
+
+struct qdf_stream {
+	struct qdf_data data;
+	struct qdf_filter_array filters;
+};
+
 struct qdf_object {
 	enum qdf_type type;
 	union {
@@ -67,7 +79,7 @@ struct qdf_object {
 		const char *name;
 		struct qdf_array a;
 		struct qdf_dict d;
-		/* TODO: stream */
+		struct qdf_stream st;
 	} u;
 };
 
