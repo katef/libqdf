@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <qdf/version.h>
 #include <qdf/types.h>
@@ -92,5 +93,49 @@ none:
 omit:
 
 	return (struct qdf_object) { .type = QDF_TYPE_NULL };
+}
+
+bool
+qdf_filter_encode(const struct qdf_filter *f,
+	const void *in, size_t insz,
+	const void **out, size_t *outsz)
+{
+	assert(f != NULL);
+	assert(in != NULL);
+	assert(out != NULL);
+	assert(outsz != NULL);
+
+	(void) in;
+	(void) insz;
+	(void) out;
+	(void) outsz;
+
+	switch (f->type) {
+	default:
+		errno = ENOSYS;
+		return false;
+	}
+}
+
+bool
+qdf_filter_decode(const struct qdf_filter *f,
+	const void *in, size_t insz,
+	const void **out, size_t *outsz)
+{
+	assert(f != NULL);
+	assert(in != NULL);
+	assert(out != NULL);
+	assert(outsz != NULL);
+
+	(void) in;
+	(void) insz;
+	(void) out;
+	(void) outsz;
+
+	switch (f->type) {
+	default:
+		errno = ENOSYS;
+		return false;
+	}
 }
 
