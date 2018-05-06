@@ -8,10 +8,10 @@
 #define LIBQDF_PRINT_H
 
 void
-qdf_vprint_comment(FILE *f, const char *fmt, va_list ap);
+qdf_print_space(FILE *f);
 
 void
-qdf_print_comment(FILE *f, const char *fmt, ...);
+qdf_print_comment(FILE *f, const char *s);
 
 void
 qdf_print_null(FILE *f);
@@ -35,25 +35,37 @@ void
 qdf_print_bin(FILE *f, const void *p, size_t n);
 
 void
+qdf_print_raw(FILE *f, const void *p, size_t n);
+
+void
 qdf_print_name(FILE *f, const char *name);
 
 void
-qdf_print_array(FILE *f, const struct qdf_array *a);
+qdf_print_def_open(FILE *f, unsigned id, unsigned gen);
 
 void
-qdf_print_dict(FILE *f, const struct qdf_dict *d);
-
-void
-qdf_print_object(FILE *f, const struct qdf_object *o);
-
-void
-qdf_print_def(FILE *f, unsigned id, const struct qdf_object *o);
+qdf_print_def_close(FILE *f);
 
 void
 qdf_print_ref(FILE *f, unsigned id);
 
-bool
-qdf_print_stream(FILE *f, const struct qdf_stream *st);
+void
+qdf_print_array_open(FILE *f);
+
+void
+qdf_print_array_close(FILE *f);
+
+void
+qdf_print_dict_open(FILE *f);
+
+void
+qdf_print_dict_close(FILE *f);
+
+void
+qdf_print_stream_open(FILE *f);
+
+void
+qdf_print_stream_close(FILE *f);
 
 #endif
 
