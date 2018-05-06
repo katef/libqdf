@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <inttypes.h>
@@ -15,19 +16,13 @@
 #include <ctype.h>
 #include <math.h>
 
+#include <qdf/version.h>
 #include <qdf/types.h>
-#include <qdf/print.h>
 
-void
-qdf_print_space(FILE *f)
-{
-	assert(f != NULL);
+#include "token.h"
 
-	fprintf(f, " ");
-}
-
-void
-qdf_print_comment(FILE *f, const char *s)
+static void
+print_comment(FILE *f, const char *s)
 {
 	assert(f != NULL);
 	assert(s = NULL);
@@ -36,40 +31,8 @@ qdf_print_comment(FILE *f, const char *s)
 	fprintf(f, "%% %s\n", s);
 }
 
-void
-qdf_print_null(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "null");
-}
-
-void
-qdf_print_bool(FILE *f, bool v)
-{
-	assert(f != NULL);
-
-	fprintf(f, "%s", v ? "true" : "false");
-}
-
-void
-qdf_print_int(FILE *f, qdf_int n)
-{
-	assert(f != NULL);
-
-	fprintf(f, "%" QDF_PRId, n);
-}
-
-void
-qdf_print_size(FILE *f, size_t n)
-{
-	assert(f != NULL);
-
-	fprintf(f, "%zu", n);
-}
-
-void
-qdf_print_real(FILE *f, qdf_real n)
+static void
+print_real(FILE *f, qdf_real n)
 {
 	const int precision = 8;
 	double i, b; /* not qdf_real; for modf() and friends */
@@ -149,8 +112,8 @@ balanced(const char *s)
 	return false;
 }
 
-void
-qdf_print_string(FILE *f, const char *s)
+static void
+print_string(FILE *f, const char *s)
 {
 	const int limit = 70;
 	const char *p;
@@ -220,8 +183,8 @@ qdf_print_string(FILE *f, const char *s)
 	fprintf(f, ")");
 }
 
-void
-qdf_print_bin(FILE *f, const void *p, size_t n)
+static void
+print_bin(FILE *f, const void *p, size_t n)
 {
 	size_t i;
 
@@ -237,8 +200,8 @@ qdf_print_bin(FILE *f, const void *p, size_t n)
 	fprintf(f, ">");
 }
 
-void
-qdf_print_raw(FILE *f, const void *p, size_t n)
+static void
+print_raw(FILE *f, const void *p, size_t n)
 {
 	assert(f != NULL);
 	assert(p != NULL);
@@ -246,8 +209,8 @@ qdf_print_raw(FILE *f, const void *p, size_t n)
 	fwrite(p, n, 1, f);
 }
 
-void
-qdf_print_name(FILE *f, const char *name)
+static void
+print_name(FILE *f, const char *name)
 {
 	const char *p;
 
@@ -285,84 +248,71 @@ qdf_print_name(FILE *f, const char *name)
 }
 
 void
-qdf_print_def_open(FILE *f, unsigned id, unsigned gen)
+qdf_print_token(FILE *f, const struct token *t)
 {
 	assert(f != NULL);
-
-	fprintf(f, "%u %u obj\n", id, gen);
-}
-
-void
-qdf_print_def_close(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "\n");
-	fprintf(f, "endobj");
-}
-
-void
-qdf_print_ref(FILE *f, unsigned id)
-{
-	const unsigned gen = 0;
-
-	assert(f != NULL);
-
-	fprintf(f, "%u %u R", id, gen);
-}
-
-void
-qdf_print_array_open(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "[");
-}
-
-void
-qdf_print_array_close(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "]");
-}
-
-void
-qdf_print_dict_open(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "<<");
-}
-
-void
-qdf_print_dict_close(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, ">>");
-}
-
-void
-qdf_print_stream_open(FILE *f)
-{
-	assert(f != NULL);
-
-	fprintf(f, "stream\n");
-}
-
-void
-qdf_print_stream_close(FILE *f)
-{
-	assert(f != NULL);
+	assert(t != NULL);
 
 	/*
-	 * PDF 2.0 7.3.8.2 "Streams shall also not contain too much data,
-	 * with the exception that there may be an extra end-of-line marker
-	 * ... before the keyword endstream."
+	 * TODO: store previous token .type - that's why we want a struct token as a single entry point
+	 * TODO: indentation here
+	 * TODO: conditional whitespace here
 	 */
+	fprintf(f, " ");
 
-	fprintf(f, "\n");
-	fprintf(f, "endstream");
+	switch (t->type) {
+	case TOK_VER:
+	case TOK_EOF:
+	case TOK_BR:
+		abort(); /* not implemented */
+
+	case TOK_COMMENT:     print_comment(f, t->u.comment);                   break;
+	case TOK_REAL:        print_real   (f, t->u.n);                         break;
+	case TOK_STRING:      print_string (f, t->u.s);                         break;
+	case TOK_BIN:         print_bin    (f, t->u.data.p, t->u.data.n);       break;
+	case TOK_RAW:         print_raw    (f, t->u.data.p, t->u.data.n);       break;
+	case TOK_NAME:        print_name   (f, t->u.name);                      break;
+
+	case TOK_NULL:        fprintf(f, "null");                               break;
+	case TOK_BOOL:        fprintf(f, "%s", t->u.v ? "true" : "false");      break;
+	case TOK_INT:         fprintf(f, "%" QDF_PRId, t->u.i);                 break;
+	case TOK_SIZE:        fprintf(f, "%zu", t->u.z);                        break;
+	case TOK_REF:         fprintf(f, "%u %u R", t->u.ref.id, t->u.ref.gen); break;
+	case TOK_ARRAY_OPEN:  fprintf(f, "[");                                  break;
+	case TOK_ARRAY_CLOSE: fprintf(f, "]");                                  break;
+	case TOK_DICT_OPEN:   fprintf(f, "<<");                                 break;
+	case TOK_DICT_CLOSE:  fprintf(f, ">>");                                 break;
+
+	case TOK_DEF_OPEN:
+		fprintf(f, "%u %u obj\n", t->u.ref.id, t->u.ref.gen);
+		break;
+
+	case TOK_DEF_CLOSE:
+		fprintf(f, "\n");
+		fprintf(f, "endobj");
+		break;
+
+	case TOK_STREAM_OPEN:
+		fprintf(f, "stream\n");
+		break;
+
+	case TOK_STREAM_CLOSE:
+		/*
+		 * PDF 2.0 7.3.8.2 "Streams shall also not contain too much data,
+		 * with the exception that there may be an extra end-of-line marker
+		 * ... before the keyword endstream."
+		 */
+
+		fprintf(f, "\n");
+		fprintf(f, "endstream");
+		break;
+
+	default:
+		abort();
+	}
+
+	/*
+	 * TODO: save lexical state
+	 */
 }
 

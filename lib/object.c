@@ -14,13 +14,19 @@
 #include <inttypes.h>
 #include <errno.h>
 
+#include <qdf/version.h>
 #include <qdf/types.h>
 #include <qdf/print.h>
-#include <qdf/object.h>
 #include <qdf/params.h>
 #include <qdf/filter.h>
 
 #include "filter.h"
+#include "token.h"
+
+/* for C99 compound literals */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 void
 qdf_vprintf_comment(FILE *f, const char *fmt, va_list ap)
@@ -51,7 +57,7 @@ qdf_vprintf_comment(FILE *f, const char *fmt, va_list ap)
 		abort();
 	}
 
-	qdf_print_comment(f, buf);
+	qdf_print_token(f, & (struct token) { TOK_COMMENT, .u.comment = buf } );
 }
 
 void
@@ -74,20 +80,18 @@ qdf_print_object(FILE *f, const struct qdf_object *o)
 	assert(o != NULL);
 
 	switch (o->type) {
-	case QDF_TYPE_NULL:   qdf_print_null  (f);            return;
-	case QDF_TYPE_BOOL:   qdf_print_bool  (f, o->u.v);    return;
-	case QDF_TYPE_INT:    qdf_print_int   (f, o->u.i);    return;
-	case QDF_TYPE_SIZE:   qdf_print_size  (f, o->u.z);    return;
-	case QDF_TYPE_REAL:   qdf_print_real  (f, o->u.n);    return;
-	case QDF_TYPE_STRING: qdf_print_string(f, o->u.s);    return;
-	case QDF_TYPE_NAME:   qdf_print_name  (f, o->u.name); return;
-	case QDF_TYPE_ARRAY:  qdf_print_array (f, &o->u.a);   return;
-	case QDF_TYPE_DICT:   qdf_print_dict  (f, &o->u.d);   return;
-	case QDF_TYPE_STREAM: qdf_print_stream(f, &o->u.st);  return;
+	case QDF_TYPE_NULL:   qdf_print_token(f, & (struct token) { TOK_NULL                        }); return;
+	case QDF_TYPE_BOOL:   qdf_print_token(f, & (struct token) { TOK_BOOL,   .u.v    = o->u.v    }); return;
+	case QDF_TYPE_INT:    qdf_print_token(f, & (struct token) { TOK_INT,    .u.i    = o->u.i    }); return;
+	case QDF_TYPE_SIZE:   qdf_print_token(f, & (struct token) { TOK_SIZE,   .u.z    = o->u.z    }); return;
+	case QDF_TYPE_REAL:   qdf_print_token(f, & (struct token) { TOK_REAL,   .u.n    = o->u.n    }); return;
+	case QDF_TYPE_STRING: qdf_print_token(f, & (struct token) { TOK_STRING, .u.s    = o->u.s    }); return;
+	case QDF_TYPE_BIN:    qdf_print_token(f, & (struct token) { TOK_BIN,    .u.data = o->u.data }); return;
+	case QDF_TYPE_NAME:   qdf_print_token(f, & (struct token) { TOK_NAME,   .u.name = o->u.name }); return;
 
-	case QDF_TYPE_BIN:
-		qdf_print_bin(f, o->u.data.p, o->u.data.n);
-		return;
+	case QDF_TYPE_ARRAY:  qdf_print_array (f, &o->u.a);  return;
+	case QDF_TYPE_DICT:   qdf_print_dict  (f, &o->u.d);  return;
+	case QDF_TYPE_STREAM: qdf_print_stream(f, &o->u.st); return;
 
 	default:
 		assert(!"unreached");
@@ -103,9 +107,9 @@ qdf_print_def(FILE *f, unsigned id, const struct qdf_object *o)
 	assert(f != NULL);
 	assert(o != NULL);
 
-	qdf_print_def_open(f, id, gen);
+	qdf_print_token(f, & (struct token) { TOK_DEF_OPEN, .u.ref = { id, gen } });
 	qdf_print_object(f, o);
-	qdf_print_def_close(f);
+	qdf_print_token(f, & (struct token) { TOK_DEF_CLOSE });
 }
 
 void
@@ -116,59 +120,40 @@ qdf_print_array(FILE *f, const struct qdf_array *a)
 	assert(f != NULL);
 	assert(a != NULL);
 
-	qdf_print_array_open(f);
+	qdf_print_token(f, & (struct token) { TOK_ARRAY_OPEN });
 
 	for (i = 0; i < a->n; i++) {
 		qdf_print_object(f, &a->o[i]);
-
-		if (i + 1 < a->n) {
-			qdf_print_space(f);
-		}
 	}
 
-	qdf_print_array_close(f);
+	qdf_print_token(f, & (struct token) { TOK_ARRAY_CLOSE });
 }
 
 void
 qdf_print_dict(FILE *f, const struct qdf_dict *d)
 {
-	size_t i, j, n;
+	size_t i, j;
 
 	assert(f != NULL);
 	assert(d != NULL);
 
-	qdf_print_dict_open(f);
+	qdf_print_token(f, & (struct token) { TOK_DICT_OPEN });
 
 	/* ISO PDF 2.0 7.3.7 "A dictonary whose value is null ... shall be
 	 * treated the same as if the entry does not exist." */
-
-	n = 0;
-
-	for (i = 0; i < d->n; i++) {
-		if (d->e[i].o.type == QDF_TYPE_NULL) {
-			continue;
-		}
-
-		n++;
-	}
 
 	for (i = 0, j = 0; i < d->n; i++) {
 		if (d->e[i].o.type == QDF_TYPE_NULL) {
 			continue;
 		}
 
-		qdf_print_name(f, d->e[i].name);
-		qdf_print_space(f);
+		qdf_print_token(f, & (struct token) { TOK_NAME, .u.name = d->e[i].name });
 		qdf_print_object(f, &d->e[i].o);
-
-		if (j + 1 < n) {
-			qdf_print_space(f);
-		}
 
 		j++;
 	}
 
-	qdf_print_dict_close(f);
+	qdf_print_token(f, & (struct token) { TOK_DICT_CLOSE });
 }
 
 static struct qdf_object
@@ -336,7 +321,7 @@ qdf_print_filter_encoded(FILE *f,
 		n = outsz;
 	}
 
-	qdf_print_raw(f, p, n);
+	qdf_print_token(f, & (struct token) { TOK_RAW, .u.data = { p, n } });
 
 	if (i > 0) {
 		free((void *) p);
@@ -356,13 +341,13 @@ qdf_print_stream(FILE *f, const struct qdf_stream *st)
 		st->data.n, &st->filters,
 		"Filter", "DecodeParams");
 
-	qdf_print_stream_open(f);
+	qdf_print_token(f, & (struct token) { TOK_STREAM_OPEN });
 
 	if (!qdf_print_filter_encoded(f, st->data.p, st->data.n, &st->filters)) {
 		return false;
 	}
 
-	qdf_print_stream_close(f);
+	qdf_print_token(f, & (struct token) { TOK_STREAM_CLOSE });
 
 	return true;
 }
